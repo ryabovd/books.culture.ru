@@ -38,9 +38,19 @@ def getContent(url):
     try:
         bs = BeautifulSoup(text, 'html.parser')
         content = bs.find('div', {'class': 'container container__pvi-no-styles container__medium'} ).find('div', {'class': 'section_body'})
+        pagination = bs.find('nav', {'class': 'pagination'}).find_all('a')
+        print(pagination)
+        pagination_list = []
+        for a in pagination:
+            end_link = a.attrs.get('href')
+            full_link = 'https://www.culture.ru/' + end_link
+            pagination_list.append(full_link)
+            pass
+        print(pagination_list)
 
     except AttributeError as e:
         return None
+    # Настроить возврат страницы с учетом пагинации
     return content
 
 
@@ -58,14 +68,55 @@ def make_address(name_en):
 def main():
     for name_en in authors_en:
         address = make_address(name_en)
-        print(address)
+        print(address + '\n')
         if name_en == 'aleksandr-grin':
             content = getContent(address)
             if content == None:
-                print('Content could not be found')
+                print('Content could not be found\n')
             else:
-                print(content, '\n')
-                print('OK')
+                # print(content, '\n')
+                print('OK\n')
+                # anchors = content.find_all('href')
+                for a_tag in content.find_all("a"):
+                    href = a_tag.attrs.get("href")
+                    if href == "" or href is None:
+            # href пустой тег
+                        continue
+                    else:
+                        # делаю ссылку на книгу
+                        href_full = 'https://www.culture.ru/' + href
+                        # Печатаю ссылку на книгу
+                        print(href_full)
+                        url = href_full
+                        response = requests.get(url).status_code
+                        print(response)
+                        bad_url_list = []
+                        if response == 200:
+                            book_page = requests.get(url)
+                            text = book_page.text
+                            # print(text)
+                            bs = BeautifulSoup(text, 'html.parser')
+                            book_title = bs.find('h1').get_text()
+                            print(book_title)
+                            book_auther = bs.find('a', {'class': 'attributes_value'}).get_text()
+                            print(book_auther)
+                            book_link = bs.find('a', {'class':'about-entity_btn button button__primary'}).find_next('a')
+                            file_link = book_link.attrs.get('href')
+                            print(book_link)
+                            print(file_link)
+                            file_name = book_auther + '. ' + book_title + '.epub'
+                            print(file_name)
+                            url = file_link
+                            response = requests.get(url)
+                            with open(file_name, 'wb') as file:
+                                file.write(response.content)
+                        else:
+                            bad_url_list.append(url)
+                    print('BAD URL', bad_url_list)
+
+                        # <a href="https://cdn.culture.ru/files/2855c1ed-5a02-5d07-a525-d4cdaaaf3462/zelenaya-lampa" class="about-entity_btn button button__primary">Скачать книгу</a>
+        # content = bs.find('div', {'class': 'container container__pvi-no-styles container__medium'} ).find('div', {'class': 'section_body'})
+
 
 
 
